@@ -1,10 +1,14 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
+using UniRx;
 using UnityEngine;
+
 public class UIManager : Singleton<UIManager>
 {
     [SerializeField] private List<Transform> parents;
     private List<UIBase> uiList = new List<UIBase>();
+
+    public static readonly Subject<UIBase> OnUIChanged = new Subject<UIBase>();
 
     public static void SetParents(List<Transform> parents)
     {
@@ -31,6 +35,8 @@ public class UIManager : Singleton<UIManager>
         }
         ui.gameObject.SetActive(true);
         ui.Opened(param);
+        OnUIChanged.OnNext(ui);
+
         return (T)ui;
     }
 
@@ -43,20 +49,10 @@ public class UIManager : Singleton<UIManager>
             if (ui.uiPosition == eUIPosition.UI)
             {
                 var prevUI = Instance.uiList.FindLast(obj => obj.uiPosition == eUIPosition.UI);
-                prevUI.gameObject.SetActive(true);
+                prevUI?.gameObject.SetActive(true);
             }
             Destroy(ui.gameObject);
+            OnUIChanged.OnNext(null);
         }
-    }
-
-    public static T Get<T>() where T : UIBase
-    {
-        return (T)Instance.uiList.Find(obj => obj.name == typeof(T).ToString());
-    }
-
-    public static bool IsOpened<T>() where T : UIBase
-    {
-        var ui = Instance.uiList.Find(obj => obj.name == typeof(T).ToString());
-        return ui != null && ui.gameObject.activeInHierarchy;
     }
 }
